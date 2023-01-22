@@ -43,6 +43,10 @@ function pretty_replace(dictionary,text)
     {
         return text.splice(match.index, match[0].length, (<span style={`color:${color}`}>{value}</span>).outerHTML)
     }
+    function replaceStr2(text, match,color,value)
+    {
+        return text.splice(match.index, match[0].length, (<span style="color:gray">{"{"}{"{"}<span style={`color:${color}`}>{value}</span>{"}"}{"}"}</span>).outerHTML)
+    }
     var text =
     text.replace(/\n/g,'<br>')
         .replace(/\t/g,'&nbsp;&nbsp;&nbsp;&nbsp;')
@@ -59,7 +63,7 @@ function pretty_replace(dictionary,text)
         }
         else
         {
-            text = replaceStr(text,match,"red",current)
+            text = replaceStr2(text,match,"red",current)
         }
     }
     return text
