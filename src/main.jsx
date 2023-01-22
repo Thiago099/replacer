@@ -19,6 +19,7 @@ String.prototype.splice = function(index, count, add) {
     return this.slice(0, index) + (add || "") + this.slice(index + count);
 };
 
+
 function replace(dictionary,text)
 {
     var regex = /{{(.*?)}}/g;
@@ -39,13 +40,13 @@ function replace(dictionary,text)
 
 function pretty_replace(dictionary,text)
 {
-    function replaceStr(text, match,color,value)
+    function replaceKnownVariable(text, match,color,value)
     {
         return text.splice(match.index, match[0].length, (<span style={`color:${color}`}>{value}</span>).outerHTML)
     }
-    function replaceStr2(text, match,color,value)
+    function replaceUnknownVariable(text, match,color,value)
     {
-        return text.splice(match.index, match[0].length, (<span style="color:gray">{"{"}{"{"}<span style={`color:${color}`}>{value}</span>{"}"}{"}"}</span>).outerHTML)
+        return text.splice(match.index, match[0].length, (<span style="color:gray">{"{\0{"}<span style={`color:${color}`}>{value}</span>{"}}"}</span>).outerHTML)
     }
     var text =
     text.replace(/\n/g,'<br>')
@@ -58,12 +59,12 @@ function pretty_replace(dictionary,text)
         var current = match[1].trim()
         if(current in dictionary)
         {
-            text = replaceStr(text,match,"green",dictionary[current])
+            text = replaceKnownVariable(text,match,"green",dictionary[current])
             regex.lastIndex = match.index
         }
         else
         {
-            text = replaceStr2(text,match,"red",current)
+            text = replaceUnknownVariable(text,match,"red",current)
         }
     }
     return text
@@ -82,29 +83,31 @@ function findVariables(text)
 
 const data = {}
 
-const ref = {}
+const controlRef = ref()
+const textRef = ref()
+
 const main = <div>
-    <div  ref={[ref,"text"]}></div>
-    <div  ref={[ref,"controls"]}></div>
+    <div  ref={controlRef}></div>
+    <div  ref={textRef}></div>
 </div>
+
 main.parent(document.body)
 
-ref.text.html(()=>{
-    var result = pretty_replace(data,text)
-    return(
-        result
-
-    )
-})
-
-ref.controls.child(()=>{
+textRef.html(()=>pretty_replace(data,text))
+controlRef.child(()=>{
     const inputContainer = <div></div>
     for(const variable of findVariables(text))
     {
-        const input = <input type="text" placeholder={variable}></input>
+        const input = ref()
+
+        const container = 
+        <div class="form-group">
+            <label>{variable}</label>
+            <input type="text" ref={input}></input>
+        </div>
+        container.parent(inputContainer)
 
         input
-            .parent(inputContainer)
             .event("input",()=>{
                 if(input.value == "")
                 {
@@ -114,7 +117,7 @@ ref.controls.child(()=>{
                 {
                     data[variable] = input.value
                 }
-                ref.text.update()
+                textRef.update()
             })
     }
     return inputContainer
